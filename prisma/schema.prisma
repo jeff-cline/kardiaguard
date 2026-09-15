@@ -1,0 +1,109 @@
+// Kardia Guard — heart-health portal (Phase 1)
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Roles: "god" | "investor" | "client" | "member"
+model User {
+  id                 String    @id @default(cuid())
+  email              String    @unique
+  passwordHash       String
+  name               String    @default("")
+  role               String    @default("member")
+  mustChangePassword Boolean   @default(false)
+  zip                String    @default("")
+  sex                String    @default("")  // "male" | "female" | ""
+  birthYear          Int?
+  // client role: the location this account manages (owner). null for others.
+  locations          Location[] @relation("LocationOwner")
+  leads              Lead[]
+  bookings           Booking[]
+  createdAt          DateTime  @default(now())
+}
+
+// Heart-screening test catalog (seeded)
+model Test {
+  id           String         @id @default(cuid())
+  slug         String         @unique
+  name         String
+  detects      String
+  noninvasive  String         @default("Yes")
+  screeningFit Int            @default(3) // 1..5 stars
+  sortOrder    Int            @default(0)
+  locations    LocationTest[]
+  bookings     Booking[]
+}
+
+// A facility/provider that offers screenings
+model Location {
+  id         String         @id @default(cuid())
+  name       String
+  address    String         @default("")
+  city       String         @default("")
+  state      String         @default("")
+  zip        String         @default("")
+  lat        Float?
+  lng        Float?
+  phone      String         @default("")
+  bookingUrl String         @default("")
+  source     String         @default("manual") // "mammo" | "manual"
+  active     Boolean        @default(true)
+  ownerId    String?
+  owner      User?          @relation("LocationOwner", fields: [ownerId], references: [id])
+  tests      LocationTest[]
+  bookings   Booking[]
+  createdAt  DateTime       @default(now())
+}
+
+// Which tests a location offers (many-to-many)
+model LocationTest {
+  id         String   @id @default(cuid())
+  locationId String
+  testId     String
+  location   Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  test       Test     @relation(fields: [testId], references: [id], onDelete: Cascade)
+
+  @@unique([locationId, testId])
+}
+
+// A member sign-up = a lead
+model Lead {
+  id         String    @id @default(cuid())
+  userId     String?
+  user       User?     @relation(fields: [userId], references: [id])
+  name       String    @default("")
+  email      String
+  phone      String    @default("")
+  zip        String    @default("")
+  source     String    @default("signup")
+  coreLeadId String    @default("") // id returned by Core /api/core/lead
+  status     String    @default("new")
+  createdAt  DateTime  @default(now())
+  bookings   Booking[]
+}
+
+// Lead -> booked appointment (the conversion KPI)
+model Booking {
+  id         String   @id @default(cuid())
+  leadId     String?
+  lead       Lead?    @relation(fields: [leadId], references: [id])
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
+  locationId String
+  location   Location @relation(fields: [locationId], references: [id])
+  testId     String?
+  test       Test?    @relation(fields: [testId], references: [id])
+  status     String   @default("clicked") // "clicked" | "booked"
+  createdAt  DateTime @default(now())
+}
+
+// God-editable key/value config (recaptcha keys, core api keys, etc.)
+model Setting {
+  key   String @id
+  value String @default("")
+}
