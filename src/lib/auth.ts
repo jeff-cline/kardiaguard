@@ -8,7 +8,7 @@ const COOKIE = "kg_session";
 const MAX_AGE = 60 * 60 * 24 * 30; // 30 days
 const secret = () => process.env.SESSION_SECRET || "insecure-dev-secret";
 
-export type Role = "god" | "investor" | "client" | "member";
+export type Role = "god" | "investor" | "client" | "member" | "lab";
 export type Session = { uid: string; role: Role };
 
 export async function hashPassword(pw: string) {
@@ -72,5 +72,6 @@ export function roleHome(role: string): string {
   if (role === "god") return "/dashboard";
   if (role === "investor") return "/investor";
   if (role === "client") return "/client";
+  if (role === "lab") return "/lab";
   return "/portal";
 }

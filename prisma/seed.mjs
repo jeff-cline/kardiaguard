@@ -47,6 +47,35 @@ async function main() {
     console.log("God account already exists — left unchanged");
   }
 
+  // 2b) Genetic test catalog
+  const GTESTS = [
+    ["inherited-cardiovascular-cgx", "Inherited Cardiovascular Genetic Testing (CGx)", "Cardiac", "Inherited heart conditions — cardiomyopathies, inherited arrhythmias, genetic sudden death", 1],
+    ["familial-hypercholesterolemia-fh", "Familial Hypercholesterolemia (FH) Genetic Testing", "Lipids", "Inherited very-high LDL cholesterol", 2],
+    ["cardiac-pharmacogenomics-pgx", "Cardiac Pharmacogenomics (PGx)", "Pharmacogenomics", "How your genes affect medication safety & effectiveness", 3],
+    ["hereditary-cancer-brca", "Hereditary Cancer Panel (incl. BRCA1 / BRCA2)", "Hereditary Cancer", "Inherited risk for breast, ovarian & other cancers", 4],
+  ];
+  for (const [slug, name, category, detects, sortOrder] of GTESTS) {
+    await db.geneticTest.upsert({ where: { slug }, update: { name, category, detects, sortOrder }, create: { slug, name, category, detects, sortOrder } });
+  }
+  console.log(`Seeded ${GTESTS.length} genetic tests`);
+
+  // 2c) Sample genetic labs (mail-order) so routing works out of the box
+  const gtMap = Object.fromEntries((await db.geneticTest.findMany({ select: { id: true, slug: true } })).map((t) => [t.slug, t.id]));
+  const LABS = [
+    { name: "Helix Heart Genomics", fulfillment: "mail_nationwide", coverageStates: "", requestUrl: "https://kardiaguard.com/genetic-testing", tests: ["inherited-cardiovascular-cgx", "familial-hypercholesterolemia-fh", "cardiac-pharmacogenomics-pgx"] },
+    { name: "Meridian Molecular Labs", fulfillment: "mail_nationwide", coverageStates: "", requestUrl: "https://kardiaguard.com/genetic-testing", tests: ["hereditary-cancer-brca", "familial-hypercholesterolemia-fh"] },
+    { name: "Desert Genetics (Southwest)", fulfillment: "mail_by_state", coverageStates: "AZ, NV, NM, CA", requestUrl: "https://kardiaguard.com/genetic-testing", tests: ["inherited-cardiovascular-cgx", "cardiac-pharmacogenomics-pgx", "hereditary-cancer-brca"] },
+  ];
+  let nl = 0;
+  for (const l of LABS) {
+    const already = await db.geneticLab.findFirst({ where: { name: l.name } });
+    if (already) continue;
+    const testIds = (l.tests || []).map((s) => gtMap[s]).filter(Boolean);
+    await db.geneticLab.create({ data: { name: l.name, fulfillment: l.fulfillment, coverageStates: l.coverageStates, requestUrl: l.requestUrl, tests: { create: testIds.map((id) => ({ testId: id })) } } });
+    nl++;
+  }
+  console.log(`Seeded ${nl} genetic labs`);
+
   // 3) Mammo Express seed locations (the feeder for first testing)
   const seedFile = join(__dirname, "seed-locations.json");
   if (existsSync(seedFile)) {

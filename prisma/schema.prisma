@@ -21,8 +21,10 @@ model User {
   birthYear          Int?
   // client role: the location this account manages (owner). null for others.
   locations          Location[] @relation("LocationOwner")
+  geneticLabs        GeneticLab[] @relation("LabOwner")
   leads              Lead[]
   bookings           Booking[]
+  geneticRequests    GeneticRequest[]
   createdAt          DateTime  @default(now())
 }
 
@@ -85,6 +87,7 @@ model Lead {
   status     String    @default("new")
   createdAt  DateTime  @default(now())
   bookings   Booking[]
+  geneticRequests GeneticRequest[]
 }
 
 // Lead -> booked appointment (the conversion KPI)
@@ -106,4 +109,65 @@ model Booking {
 model Setting {
   key   String @id
   value String @default("")
+}
+
+// ---- Genetic testing feature ----------------------------------------------
+
+// Catalog of genetic test types (seeded)
+model GeneticTest {
+  id        String           @id @default(cuid())
+  slug      String           @unique
+  name      String
+  category  String           @default("") // Cardiac | Lipids | Pharmacogenomics | Hereditary Cancer
+  detects   String
+  sortOrder Int              @default(0)
+  labs      GeneticLabTest[]
+  requests  GeneticRequest[]
+}
+
+// A genetic testing lab — usually mail-order (nationwide or state-by-state).
+model GeneticLab {
+  id             String           @id @default(cuid())
+  name           String
+  fulfillment    String           @default("mail_nationwide") // mail_nationwide | mail_by_state | in_person
+  coverageStates String           @default("") // comma list for mail_by_state; blank + nationwide = all states
+  requestUrl     String           @default("") // the lab's own intake/order link
+  phone          String           @default("")
+  city           String           @default("")
+  state          String           @default("")
+  zip            String           @default("")
+  lat            Float?
+  lng            Float?
+  active         Boolean          @default(true)
+  ownerId        String?
+  owner          User?            @relation("LabOwner", fields: [ownerId], references: [id])
+  tests          GeneticLabTest[]
+  requests       GeneticRequest[]
+  createdAt      DateTime         @default(now())
+}
+
+model GeneticLabTest {
+  id     String      @id @default(cuid())
+  labId  String
+  testId String
+  lab    GeneticLab  @relation(fields: [labId], references: [id], onDelete: Cascade)
+  test   GeneticTest @relation(fields: [testId], references: [id], onDelete: Cascade)
+
+  @@unique([labId, testId])
+}
+
+// A member requesting a genetic test = the "request test" KPI (leads vs ordered).
+model GeneticRequest {
+  id        String      @id @default(cuid())
+  userId    String?
+  user      User?       @relation(fields: [userId], references: [id])
+  leadId    String?
+  lead      Lead?       @relation(fields: [leadId], references: [id])
+  testId    String
+  test      GeneticTest @relation(fields: [testId], references: [id])
+  labId     String?
+  lab       GeneticLab? @relation(fields: [labId], references: [id])
+  state     String      @default("")
+  status    String      @default("ordered") // requested | ordered
+  createdAt DateTime    @default(now())
 }

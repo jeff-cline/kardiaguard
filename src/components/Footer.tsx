@@ -16,6 +16,7 @@ export default function Footer() {
           <div>
             <h6>Learn</h6>
             <Link href="/tests">Heart tests</Link>
+            <Link href="/genetic-testing">Genetic testing</Link>
             <Link href="/how-it-works">How it works</Link>
             <Link href="/find">Find screening near you</Link>
           </div>

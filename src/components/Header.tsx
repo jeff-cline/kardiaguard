@@ -12,8 +12,8 @@ export default async function Header() {
         </Link>
         <nav className="nav">
           <Link href="/tests">Heart tests</Link>
+          <Link href="/genetic-testing">Genetic testing</Link>
           <Link href="/find">Find screening</Link>
-          <Link href="/how-it-works">How it works</Link>
           {s ? (
             <Link className="cta" href={roleHome(s.role)}>My portal</Link>
           ) : (

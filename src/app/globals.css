@@ -113,6 +113,9 @@ table.data tr:last-child td{border-bottom:none}
 .badge.booked{background:#ecfdf5;color:#047857}
 .badge.clicked{background:#fef3c7;color:#b45309}
 
+/* genetic test detail two-column */
+@media(max-width:760px){ .gtwrap{ grid-template-columns:1fr !important } }
+
 /* consent banner */
 #consent{position:fixed;left:0;right:0;bottom:0;z-index:60;background:var(--ink);color:#efe9ff;padding:15px 20px;box-shadow:0 -6px 24px rgba(28,19,48,.24)}
 #consent .in{max-width:940px;margin:0 auto;display:flex;align-items:center;gap:16px;flex-wrap:wrap;font-size:13px;line-height:1.5}
