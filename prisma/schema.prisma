@@ -120,6 +120,16 @@ model ScreeningLog {
   @@unique([userId, testSlug])
 }
 
+// Tracks reminder emails already sent, so we never spam the same due test.
+model ReminderSent {
+  id       String   @id @default(cuid())
+  userId   String
+  testSlug String
+  sentOn   DateTime @default(now())
+
+  @@unique([userId, testSlug])
+}
+
 // God-editable key/value config (recaptcha keys, core api keys, etc.)
 model Setting {
   key   String @id

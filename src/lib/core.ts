@@ -32,6 +32,26 @@ export async function pushLeadToCore(input: {
   }
 }
 
+// Send an email through the Core (Zapmail). Returns true if accepted.
+// Inert (returns false) until a Core key pair is configured — like the lead push.
+export async function sendCoreEmail(input: { to: string; subject: string; html: string }): Promise<boolean> {
+  const base = process.env.CORE_BASE_URL || "";
+  const pk = process.env.CORE_PK || "";
+  const sk = process.env.CORE_SK || "";
+  if (!base || !pk || !sk) return false;
+  try {
+    const res = await fetch(`${base}/api/core/email`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-core-key": pk, "x-core-secret": sk },
+      body: JSON.stringify({ to: input.to, subject: input.subject, html: input.html, provider: "zapmail" }),
+      signal: AbortSignal.timeout(9000),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 // ---- reCAPTCHA (Core portable-guard, env-driven) --------------------------
 // Inert until keys are set. In "monitor" it logs and passes; in "enforce" it
 // blocks low scores. The honeypot below is always active.
