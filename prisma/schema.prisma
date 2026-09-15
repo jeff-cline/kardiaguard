@@ -19,6 +19,9 @@ model User {
   zip                String    @default("")
   sex                String    @default("")  // "male" | "female" | ""
   birthYear          Int?
+  remindersOn        Boolean   @default(true)
+  liveProgram        Boolean   @default(false) // $99/mo live movement upgrade
+  screeningLogs      ScreeningLog[]
   // client role: the location this account manages (owner). null for others.
   locations          Location[] @relation("LocationOwner")
   geneticLabs        GeneticLab[] @relation("LabOwner")
@@ -103,6 +106,18 @@ model Booking {
   test       Test?    @relation(fields: [testId], references: [id])
   status     String   @default("clicked") // "clicked" | "booked"
   createdAt  DateTime @default(now())
+}
+
+// A member's record that they had a screening test (drives next-due reminders)
+model ScreeningLog {
+  id       String   @id @default(cuid())
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  testSlug String
+  doneOn   DateTime
+  createdAt DateTime @default(now())
+
+  @@unique([userId, testSlug])
 }
 
 // God-editable key/value config (recaptcha keys, core api keys, etc.)
